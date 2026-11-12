@@ -1,0 +1,1221 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="rent-data" content="jjlai63-png/rent"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>B棟房租帳本</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: a working ledger — sticky header with month + tabs, summary strip, meter panel, wide room table that scrolls inside its own box. */
+:root {
+  --bg: #f3f5f4; --surface: #ffffff; --sunk: #e9eeec; --ink: #16252a; --muted: #5a6a6f; --line: #d6dedb;
+  --accent: #1c6a7f; --accent-soft: #d8eaef; --accent-ink: #ffffff;
+  --good: #2c7a4c; --good-soft: #dcefe3; --warn: #9a5b00; --warn-soft: #f7ead2;
+  --meter-bg: #14262c; --meter-fg: #f0c24f;
+  --f-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1618; --surface: #162125; --sunk: #1d2a2f; --ink: #e4ecea; --muted: #94a5a9; --line: #2a3a3f;
+  --accent: #63b5cd; --accent-soft: #1d3a44; --accent-ink: #0e1618;
+  --good: #6cc08d; --good-soft: #1b3426; --warn: #e3a64a; --warn-soft: #3a2c14;
+  --meter-bg: #091215; --meter-fg: #f0c24f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1618; --surface: #162125; --sunk: #1d2a2f; --ink: #e4ecea; --muted: #94a5a9; --line: #2a3a3f;
+  --accent: #63b5cd; --accent-soft: #1d3a44; --accent-ink: #0e1618;
+  --good: #6cc08d; --good-soft: #1b3426; --warn: #e3a64a; --warn-soft: #3a2c14;
+  --meter-bg: #091215; --meter-fg: #f0c24f; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 12px; }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: .02em; }
+.brand small { color: var(--muted); font-size: 12px; }
+.tabs { display: flex; gap: 4px; background: var(--sunk); padding: 3px; border-radius: 8px; }
+.tabs button { border: 0; background: transparent; padding: 6px 14px; border-radius: 6px; color: var(--muted); font-weight: 500; }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+main { padding-block: 20px 60px; display: grid; gap: 20px; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.bar h2 { margin: 0; font-size: 22px; text-wrap: balance; }
+.spacer { flex: 1; }
+select, input[type="date"], input[type="text"], input[type="number"], input[type="tel"], textarea {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; min-width: 0; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 12px; font-weight: 500; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger { color: var(--warn); }
+.btn.line { background: #06c755; border-color: #06c755; color: #fff; text-decoration: none; display: inline-block; }
+.btn.small { padding: 3px 9px; font-size: 13px; }
+.btn[disabled] { opacity: .5; cursor: default; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 99px; white-space: nowrap; }
+.chip.good { background: var(--good-soft); color: var(--good); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.info { background: var(--accent-soft); color: var(--accent); }
+.chip.mute { background: var(--sunk); color: var(--muted); }
+.muted { color: var(--muted); }
+.note { color: var(--muted); font-size: 13px; margin: 0; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; align-content: start; }
+.tile .k { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.tile .v { font-family: var(--f-num); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile .s { font-size: 12px; color: var(--muted); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.panel > .hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; padding: 12px 14px 0; }
+.panel > .hd h3 { margin: 0; font-size: 15px; }
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; padding: 12px 14px 14px; }
+.meter { display: grid; gap: 6px; }
+.meter .name { font-size: 13px; font-weight: 500; }
+.dial { display: flex; align-items: center; gap: 8px; background: var(--meter-bg); border-radius: 8px; padding: 8px 10px; color: var(--meter-fg); font-family: var(--f-num); }
+.dial .prev { opacity: .7; font-size: 14px; }
+.dial input { width: 7.5ch; background: transparent; border: 0; border-bottom: 1px dashed rgba(240,194,79,.5); border-radius: 0; color: var(--meter-fg); font-family: var(--f-num); font-size: 18px; letter-spacing: .08em; padding: 0 2px; }
+.dial input::placeholder { color: rgba(240,194,79,.35); }
+.dial .use { margin-left: auto; font-size: 13px; color: #cfd9d6; white-space: nowrap; }
+
+.tscroll { overflow-x: auto; }
+table.ledger { border-collapse: collapse; width: 100%; font-size: 14px; }
+.ledger th, .ledger td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.ledger th { font-size: 12px; color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--surface); }
+.ledger th.l, .ledger td.l { text-align: left; }
+.ledger td.room { position: sticky; left: 0; background: var(--surface); font-family: var(--f-num); font-weight: 600; z-index: 1; }
+.ledger tr.empty td { color: var(--muted); }
+.ledger tr.pub td { color: var(--muted); font-size: 13px; }
+.ledger tfoot td { font-weight: 700; border-bottom: 0; border-top: 2px solid var(--ink); }
+.ledger input { width: 7ch; text-align: right; font-family: var(--f-num); padding: 3px 5px; }
+.ledger input.w4 { width: 4.5ch; }
+.ledger input.w6 { width: 6.5ch; }
+.ledger .total { font-weight: 700; }
+.pay { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 2px 10px; font-size: 12px; font-weight: 500; }
+.pay.on { background: var(--good-soft); color: var(--good); border-color: transparent; }
+.pay.off { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+
+.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.rcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; align-content: start; }
+.rcard .hd { display: flex; align-items: center; gap: 8px; }
+.rcard .hd b { font-family: var(--f-num); font-size: 17px; }
+.form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
+.form label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.form label.full { grid-column: 1 / -1; }
+.form input, .form textarea { width: 100%; color: var(--ink); font-size: 14px; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+.checks label { display: flex; gap: 6px; align-items: center; }
+.rcard .ft { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -100%); }
+
+.overlay { position: fixed; inset: 0; background: rgba(8,16,18,.45); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.dialog { background: var(--surface); border-radius: 12px; width: min(520px, 100%); max-height: 90vh; overflow: auto; padding: 16px; display: grid; gap: 12px; }
+.dialog pre { margin: 0; background: var(--sunk); padding: 12px; border-radius: 8px; white-space: pre-wrap; font-family: var(--f-body); font-size: 14px; line-height: 1.7; user-select: all; }
+.banner { background: var(--warn-soft); color: var(--warn); padding: 10px 14px; border-radius: 8px; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; z-index: 30; font-size: 14px; }
+.empty-state { padding: 40px 16px; text-align: center; color: var(--muted); }
+@media (max-width: 560px) { .form { grid-template-columns: 1fr; } .tile .v { font-size: 20px; } }
+.mode-btn { border: 1px solid var(--line); background: transparent; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--muted); }
+
+/* ---------- mobile layout: bottom tab bar, one card per room ---------- */
+.is-mobile header.top .wrap { padding-block: 10px; }
+.is-mobile .brand h1 { font-size: 18px; }
+.is-mobile .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; border-radius: 0; padding: 6px max(10px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  background: var(--surface); border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); }
+.is-mobile .tabs button { padding: 9px 0; font-size: 15px; }
+.is-mobile main { padding-block: 14px calc(90px + env(safe-area-inset-bottom, 0px)); gap: 14px; }
+.is-mobile .bar h2 { font-size: 19px; }
+.is-mobile .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.is-mobile .tile { padding: 10px 12px; }
+.is-mobile .tile .v { font-size: 19px; }
+.is-mobile .hide-m { display: none; }
+.is-mobile select, .is-mobile input { font-size: 16px; }
+.mfilter { display: flex; gap: 6px; overflow-x: auto; }
+.mfilter button { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 5px 14px; font-size: 14px; white-space: nowrap; }
+.mfilter button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.mlist { display: grid; gap: 10px; }
+.mcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+.mcard.done { border-color: var(--good); }
+.mcard .t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mcard .t b { font-family: var(--f-num); font-size: 17px; }
+.mcard .t .who { font-weight: 500; }
+.mcard .t .chip { margin-left: auto; }
+.mcard .dial input { width: 100%; flex: 1; font-size: 22px; }
+.mcard .dial .use { margin-left: 0; }
+.mcard .calc { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.mcard .calc span { white-space: nowrap; }
+.mcard .f { display: flex; align-items: center; gap: 8px; }
+.mcard .f .sum { font-family: var(--f-num); font-size: 20px; font-weight: 600; margin-right: auto; }
+.mcard .pay, .mcard .btn.small { padding: 7px 14px; font-size: 14px; }
+.mcard .more { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mcard .more label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.mcard .more input { width: 100%; font-family: var(--f-num); }
+.mcard .more label.full { grid-column: 1 / -1; }
+.camrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.camrow:empty { display: none; }
+.cam { border: 1px solid var(--accent); color: var(--accent); background: var(--surface); border-radius: 6px; padding: 3px 10px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+.cam[disabled] { opacity: .6; cursor: progress; }
+.cam svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; fill: none; stroke: currentColor; stroke-width: 2; }
+.ledger .camrow { margin-top: 4px; justify-content: flex-end; }
+.ledger .camrow .chip { white-space: normal; text-align: left; max-width: 22ch; }
+.is-mobile .cam { padding: 8px 14px; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><h1>B棟房租帳本</h1><small id="sync">連線中…</small></div>
+    <button class="mode-btn" id="mode-btn" data-act="mode">切換版面</button>
+    <button class="mode-btn" data-act="setup">資料連線</button>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="month" aria-selected="true">帳單</button>
+      <button role="tab" data-tab="rooms" aria-selected="false">房客</button>
+      <button role="tab" data-tab="history" aria-selected="false">歷史</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="view">
+  <div class="empty-state">正在載入帳本資料…<br>載入後這裡會顯示本月的抄表與每間房的帳單。</div>
+</main>
+<div id="modal"></div>
+<div id="toast" class="toast" hidden></div>
+<input type="file" id="photo-in" accept="image/*" capture="environment" hidden>
+
+<script src="github-db.js"></script>
+<script src="meter-ocr.js"></script>
+<script>
+const S = { db: null, dl: null, rooms: {}, months: {}, overlay: {}, tab: 'month', sel: null,
+  ready: { rooms: false, months: false }, confirm: null, bill: null, showAll: false, dbMissing: false };
+S.mode = 'auto'; S.mfilter = 'all'; S.open = {};
+S.sample = null; S.cam = false; S.ocrFloor = false; S.ocr = {}; S.photoFor = null; S.photoRoom = null; S.busyRoom = null; S.settings = {};
+S.setup = false; S.ghError = '';
+try { S.tab = localStorage.getItem('tab') || 'month'; S.sel = localStorage.getItem('sel'); S.mode = localStorage.getItem('mode') || 'auto'; } catch (e) {}
+// 'auto' picks the phone layout on narrow screens; the header button pins one layout.
+const mobile = () => S.mode === 'mobile' || (S.mode === 'auto' && innerWidth < 760);
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
+function merge(a, b) { const o = { ...a }; for (const k in b) o[k] = isObj(b[k]) && isObj(o[k]) ? merge(o[k], b[k]) : b[k]; return o; }
+const fmt = n => n == null || Number.isNaN(n) ? '—' : Number(n).toLocaleString('zh-TW', { maximumFractionDigits: 1 });
+const money = n => n == null ? '—' : '$' + fmt(n);
+const numOrNull = v => v === '' || v == null ? null : Number(v);
+const ymLabel = l => { const m = /^(\d+)-(\d+)(.*)$/.exec(l || ''); return m ? `${+m[1]} 年 ${+m[2]} 月${m[3] ? ' ' + m[3].replace(/^-/, '') : ''}` : l; };
+const md = d => d ? d.slice(5).replace('-', '/') : '?';
+const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
+function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+const roomList = () => Object.values(S.rooms).sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || a.id.localeCompare(b.id));
+const monthList = () => Object.entries(S.months).map(([id, d]) => ({ id, ...d })).sort((a, b) => (b.sort || 0) - (a.sort || 0));
+const getMonth = id => S.months[id] ? (S.overlay[id] ? merge(S.months[id], S.overlay[id]) : S.months[id]) : null;
+const isRegular = l => /^\d+-\d{2}$/.test(l);
+
+/* ---------- billing rules (same as the Excel sheet) ---------- */
+// 1F+3F public meters are shared per head across rooms with shareMain;
+// the 2F public meter is shared per head across rooms with shareF2.
+function compute(m) {
+  const ids = Object.keys(m.rows || {}).sort((a, b) => (m.rows[a].order ?? 999) - (m.rows[b].order ?? 999));
+  const rows = ids.map(id => ({ id, ...m.rows[id] }));
+  let mainUse = 0, f2Use = 0, mainPpl = 0, f2Ppl = 0, missing = 0, mainMissing = false, f2Missing = false;
+  for (const r of rows) {
+    if (r.kind === 'public') {
+      if (r.cur == null) { missing++; r.pool === 'f2' ? f2Missing = true : mainMissing = true; continue; }
+      r.use = r.cur - r.prev;
+      if (r.pool === 'f2') f2Use += r.use; else mainUse += r.use;
+    } else {
+      if (r.shareMain) mainPpl += +r.people || 0;
+      if (r.shareF2) f2Ppl += +r.people || 0;
+    }
+  }
+  const perMain = mainMissing ? null : mainPpl ? Math.round(mainUse / mainPpl) : 0;
+  const perF2 = f2Missing ? null : f2Ppl ? Math.round(f2Use / f2Ppl) : 0;
+  const sum = { elec: 0, water: 0, rent: 0, adj: 0, total: 0, received: 0, paid: 0, unpaid: 0, nPaid: 0, nBill: 0 };
+  for (const r of rows) {
+    if (r.kind === 'public') continue;
+    const ppl = +r.people || 0;
+    r.water = ppl * (+r.waterPer || 0);
+    if (r.kind === 'flat') { r.elec = 0; r.units = null; }
+    else {
+      if (r.cur == null) { missing++; r.own = null; } else r.own = r.cur - r.prev;
+      const needMain = r.shareMain && ppl, needF2 = r.shareF2 && ppl;
+      r.share = (needMain && perMain == null) || (needF2 && perF2 == null) ? null
+        : (needMain ? ppl * perMain : 0) + (needF2 ? ppl * perF2 : 0);
+      r.units = r.own == null || r.share == null ? null : r.own + r.share;
+      r.elec = r.units == null ? null : Math.round(r.units * (+r.rate || 0));
+    }
+    r.pending = r.elec == null;
+    r.total = Math.round((r.elec || 0) + r.water + (+r.rent || 0) + (+r.adj || 0));
+    r.billable = !!(r.tenant || ppl || +r.rent);
+    // 實收: the amount actually charged after the landlord's own adjustment; blank = same as 合計.
+    r.due = r.received != null && r.received !== '' ? +r.received : r.total;
+    sum.elec += r.elec || 0; sum.water += r.water; sum.rent += +r.rent || 0; sum.adj += +r.adj || 0; sum.total += r.total; sum.received += r.due;
+    if (r.billable) { sum.nBill++; if (r.paid) { sum.paid += r.due; sum.nPaid++; } else sum.unpaid += r.due; }
+  }
+  return { rows, perMain, perF2, mainUse, f2Use, mainPpl, f2Ppl, missing, sum };
+}
+function archiveSum(m) {
+  const s = { elec: 0, water: 0, rent: 0, total: 0, received: 0, hasRecv: false };
+  for (const r of m.rows || []) {
+    if (r.tenant === '公電') continue;
+    s.elec += r.elec || 0; s.water += r.water || 0; s.rent += r.rent || 0; s.total += r.total || 0;
+    if (r.received != null) { s.received += r.received; s.hasRecv = true; }
+  }
+  return s;
+}
+const monthTotal = m => m.archived ? archiveSum(m).total : compute(m).sum.total;
+
+/* ---------- utility bills vs. what tenants paid ---------- */
+// Taipower bills each floor separately and both utilities bill every two months, so a bill
+// entered on a month is compared with that month plus the months before it (span).
+// B436 has its own Taipower meter, so its electricity is left out; its water is included.
+const UT_KEYS = [['e1', '一樓電費'], ['e2', '二樓電費'], ['e3', '三樓電費'], ['w', '水費']];
+function collected(m) {
+  const out = { e1: 0, e2: 0, e3: 0, w: 0, missing: 0 };
+  if (m.archived) {
+    for (const r of m.rows || []) {
+      if (r.tenant === '公電' || !/^B\d/.test(r.room || '')) continue;
+      const f = r.room[1];
+      if (r.room !== 'B436' && '123'.includes(f)) out['e' + f] += r.elec || 0;
+      out.w += r.water || 0;
+    }
+  } else {
+    const c = compute(m); out.missing = c.missing;
+    for (const r of c.rows) {
+      if (r.kind === 'public') continue;
+      if (r.kind !== 'flat' && '123'.includes(r.id[1])) out['e' + r.id[1]] += r.elec || 0;
+      out.w += r.water;
+    }
+  }
+  return out;
+}
+function spanMonths(m) {
+  const span = +(m.utility?.span ?? 2) || 1;
+  const regs = monthList().filter(x => isRegular(x.label) && (x.sort || 0) <= (m.sort || 0));
+  return regs.slice(0, span).map(x => getMonth(x.id) && { id: x.id, ...getMonth(x.id) });
+}
+function utilityPL(m) {
+  const u = m.utility || {}, months = spanMonths(m);
+  const inc = { e1: 0, e2: 0, e3: 0, w: 0, missing: 0 };
+  for (const x of months) { const c = collected(x); for (const k in inc) inc[k] += c[k]; }
+  const rows = UT_KEYS.map(([k, name]) => {
+    const bill = u[k]?.amount; return { k, name, bill: bill ?? null, got: Math.round(inc[k]), pl: bill == null ? null : Math.round(inc[k] - bill), period: u[k]?.period || '' };
+  });
+  const sumOf = ks => { const rs = rows.filter(r => ks.includes(r.k) && r.bill != null);
+    return rs.length ? { bill: rs.reduce((a, r) => a + r.bill, 0), got: rs.reduce((a, r) => a + r.got, 0), pl: rs.reduce((a, r) => a + r.pl, 0) } : null; };
+  return { rows, elec: sumOf(['e1', 'e2', 'e3']), all: sumOf(['e1', 'e2', 'e3', 'w']), months, missing: inc.missing, any: rows.some(r => r.bill != null) };
+}
+const plChip = v => v == null ? '<span class="muted">—</span>' : `<span class="chip ${v >= 0 ? 'good' : 'warn'}">${v >= 0 ? '賺' : '虧'} ${fmt(Math.abs(v))}</span>`;
+function utilityRecords() {
+  return monthList().filter(m => isRegular(m.label) && m.utility).map(m => ({ m, p: utilityPL(getMonth(m.id)) })).filter(x => x.p.any);
+}
+function utilityHistory() {
+  const recs = utilityRecords();
+  if (!recs.length) return `<section class="panel"><div class="hd"><h3>水電盈虧</h3></div><p class="note" style="padding:8px 14px 14px">還沒有輸入台電或台水帳單。在帳單頁下方的「水電盈虧」填入帳單金額後，這裡會列出每一期賺或虧多少。</p></section>`;
+  const val = (p, ks) => { const rs = p.rows.filter(r => ks.includes(r.k) && r.bill != null); return rs.length ? rs.reduce((a, r) => a + r.pl, 0) : null; };
+  const tot = recs.reduce((a, x) => ({ e: a.e + (val(x.p, ['e1', 'e2', 'e3']) || 0), w: a.w + (val(x.p, ['w']) || 0) }), { e: 0, w: 0 });
+  return `<section class="panel"><div class="hd"><h3>水電盈虧</h3><span class="note">向房客收的水電費 − 台電、台水帳單</span></div>
+    <div class="tscroll"><table class="ledger"><thead><tr><th class="l">帳單月份</th><th>電費盈虧</th><th>水費盈虧</th><th>合計</th></tr></thead><tbody>
+    ${recs.map(x => `<tr><td class="l"><button class="btn small" data-act="open" data-id="${esc(x.m.id)}">${esc(ymLabel(x.m.label))}</button></td>
+      <td>${plChip(val(x.p, ['e1', 'e2', 'e3']))}</td><td>${plChip(val(x.p, ['w']))}</td><td>${plChip(x.p.all?.pl)}</td></tr>`).join('')}
+    </tbody><tfoot><tr><td class="l">累計</td><td>${plChip(tot.e)}</td><td>${plChip(tot.w)}</td><td>${plChip(tot.e + tot.w)}</td></tr></tfoot></table></div></section>`;
+}
+function viewUtility(m) {
+  const u = m.utility || {}, p = utilityPL(m), span = +(u.span ?? 2) || 1;
+  const inp = (k, f, ph, w) => `<input ${f === 'amount' ? 'inputmode="numeric"' : 'type="text"'} id="ut-${k}-${f}" data-ut="${k}" data-utf="${f}" value="${esc(u[k]?.[f] ?? '')}" placeholder="${ph}" style="width:${w}">`;
+  return `<section class="panel"><div class="hd"><h3>水電盈虧</h3>
+      <span class="note">輸入台電、台水寄來的帳單金額。比較對象：${p.months.map(x => esc(ymLabel(x.label))).join('、')} 向房客收的水電費</span></div>
+    <div style="padding:10px 14px 14px;display:grid;gap:10px">
+      <label class="note">這張帳單涵蓋 <select id="ut-span" data-ut="span">${[1, 2].map(n => `<option value="${n}" ${n === span ? 'selected' : ''}>${n} 個月</option>`).join('')}</select>（台電、台水通常兩個月一期）</label>
+      <div class="tscroll"><table class="ledger"><thead><tr><th class="l">項目</th><th>帳單金額</th><th class="l hide-m">計費期間</th><th>向房客收</th><th>盈虧</th></tr></thead><tbody>
+      ${p.rows.map(r => `<tr><td class="l">${r.name}</td><td>${inp(r.k, 'amount', '金額', '8ch')}</td><td class="l hide-m">${inp(r.k, 'period', '例如 9/5-11/4', '12ch')}</td>
+        <td class="num">${fmt(r.got)}</td><td>${plChip(r.pl)}</td></tr>`).join('')}
+      </tbody><tfoot>
+        <tr><td class="l">電費小計</td><td class="num">${p.elec ? fmt(p.elec.bill) : ''}</td><td class="hide-m"></td><td class="num">${p.elec ? fmt(p.elec.got) : ''}</td><td>${plChip(p.elec?.pl)}</td></tr>
+        <tr><td class="l">水電合計</td><td class="num">${p.all ? fmt(p.all.bill) : ''}</td><td class="hide-m"></td><td class="num">${p.all ? fmt(p.all.got) : ''}</td><td>${plChip(p.all?.pl)}</td></tr>
+      </tfoot></table></div>
+      ${p.missing ? `<p class="note"><span class="chip warn">還有 ${p.missing} 個電表沒抄</span> 抄完後「向房客收」的電費才會完整。</p>` : ''}
+      <p class="note">436透天有獨立電錶，電費不列入；水費有列入。公電是跨樓層分攤，所以各樓層的盈虧僅供參考，以「電費小計」為準。</p>
+    </div></section>`;
+}
+
+/* ---------- meter photo → reading (asks Claude on the viewer's account) ---------- */
+const CAM_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+// One photo per floor: each floor's meter box holds every meter on that floor (B2xx → 2F).
+const floorOf = id => id.charAt(1);
+function camRow(id) {
+  const o = S.ocr[id];
+  return o ? `<div class="camrow"><span class="chip ${o.warn ? 'warn' : 'good'}">${esc(o.msg)}</span></div>` : '';
+}
+function roomCam(id) {
+  if (!S.cam) return '';
+  const o = S.ocr[id];
+  return `<div class="camrow"><button class="cam" data-act="photo-room" data-room="${esc(id)}" ${S.busyRoom ? 'disabled' : ''}>${CAM_ICON}${S.busyRoom === id ? '辨識中…' : '拍電表'}</button>${o ? `<span class="chip ${o.warn ? 'warn' : 'good'}">${esc(o.msg)}</span>` : ''}</div>`;
+}
+function floorButtons(m) {
+  if (!S.cam || !S.ocrFloor || m.archived) return '';
+  const floors = [...new Set(Object.entries(m.rows || {}).filter(([, r]) => r.kind !== 'flat').map(([id]) => floorOf(id)))].sort();
+  return `<div class="camrow">${floors.map(f => `<button class="cam" data-act="photo-floor" data-floor="${f}" ${S.busyFloor ? 'disabled' : ''}>${CAM_ICON}${S.busyFloor === f ? `${f}F 辨識中…` : `拍 ${f}F 電箱`}</button>`).join('')}
+    ${S.busyFloor ? '' : '<span class="note">一張照片拍整層的電表，讀完會先讓你核對</span>'}</div>`;
+}
+async function readFloor(floor, file) {
+  const id = S.sel, m = getMonth(id);
+  if (!m || !S.sample) return;
+  const rooms = Object.entries(m.rows).filter(([rid, r]) => floorOf(rid) === floor && r.kind !== 'flat')
+    .sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0)).map(([rid, r]) => ({ rid, ...r }));
+  S.busyFloor = floor; render();
+  const list = rooms.map(r => `- ${r.rid}（${r.kind === 'public' ? '公電' : r.tenant ? '房客 ' + r.tenant : '空房'}）：上期 ${r.prev ?? '未知'}`).join('\n');
+  const prompt = `這張照片是台灣出租房 ${floor} 樓的電箱，裡面有好幾個電表，分別屬於下列房間或公電。請讀出每個電表「累計用電度數 kWh」的整數部分，忽略小數位（通常是紅框或最右邊不同顏色的那一位）。\n\n`
+    + `房間清單（上期讀數）：\n${list}\n\n`
+    + `對應方式：先看電表上或旁邊貼的標籤、手寫房號；沒有標籤時，依讀數判斷：本期一定大於或等於上期，一個月通常增加 0 到 1000 度，選差距合理的房間。無法確定對應的房間 reading 填 null，讀到但對不上的度數放進 unassigned。\n\n`
+    + `只回覆 JSON：{"meters":[{"room":"房號","reading":整數或null,"confidence":"high"或"medium"或"low","matchedBy":"label"或"reading","note":"一句繁體中文，沒有就空字串"}],"unassigned":[整數],"note":"整體說明，沒有就空字串"}`;
+  try {
+    const out = await S.sample.json(prompt, { images: file, cache: false });
+    const got = Array.isArray(out?.meters) ? out.meters : [];
+    const items = rooms.map(r => {
+      const g = got.find(x => String(x?.room).toUpperCase() === r.rid) || {};
+      const v = g.reading != null && Number.isFinite(+g.reading) ? Math.round(+g.reading) : null;
+      return { room: r.rid, who: r.kind === 'public' ? '公電' : r.tenant || '空房', prev: r.prev, value: v,
+        conf: g.confidence || 'low', by: g.matchedBy === 'label' ? '依標籤' : v != null ? '依度數推斷' : '', note: g.note || '' };
+    });
+    const vals = items.map(i => i.value).filter(v => v != null);
+    for (const i of items) {
+      const diff = i.value != null && i.prev != null ? i.value - i.prev : null;
+      i.warn = i.value == null ? '沒讀到' : diff != null && (diff < 0 || diff > 2000) ? '和上期差距異常'
+        : vals.filter(v => v === i.value).length > 1 ? '重複的讀數' : i.conf !== 'high' ? '不太確定' : '';
+    }
+    S.review = { floor, items, unassigned: Array.isArray(out?.unassigned) ? out.unassigned.filter(Number.isFinite) : [], note: out?.note || '' };
+  } catch (e) {
+    const off = ['not_granted', 'sampling_disabled', 'images_unavailable', 'capability_disabled', 'capability_removed', 'not_declared'];
+    if (off.includes(e.code)) { S.cam = false; toast('照片辨識無法使用，請手動輸入'); }
+    else if (e.code !== 'cancelled') toast(e.code === 'rate_limited' ? 'Claude 用量已達上限，請稍後再試或手動輸入'
+      : e.code === 'image_rejected' ? '這張照片無法讀取，請換一張' : '辨識失敗，請再拍一次');
+  }
+  S.busyFloor = null; render();
+}
+async function readRoom(room, file) {
+  const id = S.sel, m = getMonth(id);
+  if (!m || !S.sample) return;
+  const r = compute(m).rows.find(x => x.id === room);
+  if (!r) return;
+  S.busyRoom = room; render();
+  try {
+    const out = await S.sample.json('', { images: file, cache: false, context: { mode: 'room', room, prev: r.prev, kind: r.kind } });
+    const g = out?.meters?.[0] || {};
+    const value = g.reading != null && Number.isFinite(+g.reading) ? Math.round(+g.reading) : null;
+    const item = {
+      room, who: r.kind === 'public' ? '公電' : r.tenant || '空房', prev: r.prev, value,
+      raw: g.raw, conf: g.confidence || 'low', by: '離線辨識', note: g.note || '',
+      digits: g.digits || null, ocrValue: value,
+    };
+    const diff = item.value != null && item.prev != null ? item.value - item.prev : null;
+    item.warn = item.value == null ? '沒讀到'
+      : diff != null && (diff < 0 || diff > 2000) ? '和上期差距異常'
+        : item.conf !== 'high' ? '不太確定' : '';
+    S.review = { title: `${room} 電表讀數`, items: [item], unassigned: [], note: out?.note || '', crop: out?.crop };
+  } catch (e) {
+    const off = ['not_granted', 'sampling_disabled', 'images_unavailable', 'capability_disabled', 'capability_removed', 'not_declared'];
+    if (off.includes(e.code)) { S.cam = false; toast('照片辨識無法使用，請手動輸入'); }
+    else if (e.code !== 'cancelled') toast(e.code === 'rate_limited' ? '用量已達上限，請稍後再試或手動輸入'
+      : e.code === 'image_rejected' ? (e.message || '這張照片無法讀取，請換一張') : '辨識失敗，請再拍一次');
+  }
+  S.busyRoom = null; render();
+}
+function viewReview() {
+  const v = S.review;
+  return `<div class="overlay"><div class="dialog" role="dialog" aria-label="核對電表讀數">
+    <div class="bar"><h2 style="font-size:18px">${esc(v.title || (v.floor ? v.floor + 'F 電箱讀數' : '電表讀數'))}</h2><span class="spacer"></span></div>
+    <p class="note">請對照照片核對，數字可以直接修改。留空的不會填入。</p>
+    ${v.crop ? `<img src="${esc(v.crop)}" alt="電表顯示窗" style="width:100%;max-height:200px;object-fit:contain;background:var(--sunk);border-radius:8px">` : ''}
+    <div class="tscroll"><table class="ledger"><thead><tr><th class="l">房號</th><th>上期</th><th>本期</th><th>用電</th><th class="l">對應</th></tr></thead><tbody>
+    ${v.items.map(i => `<tr><td class="room l">${esc(i.room)}<div class="note" style="font-weight:400">${esc(i.who)}</div></td>
+      <td class="num">${fmt(i.prev)}</td>
+      <td><input inputmode="numeric" id="rv-${i.room}" data-rv="${i.room}" value="${i.value ?? ''}" style="width:8ch"></td>
+      <td class="num">${i.value != null && i.prev != null ? fmt(i.value - i.prev) : '—'}</td>
+      <td class="l">${i.warn ? `<span class="chip warn">${esc(i.warn)}</span>` : '<span class="chip good">OK</span>'}
+        <div class="note">${esc([i.by, i.raw != null ? '原始 ' + fmt(i.raw) : '', i.note].filter(Boolean).join('・'))}</div></td></tr>`).join('')}
+    </tbody></table></div>
+    ${v.unassigned.length ? `<p class="note">另外讀到但對不上房間的度數：${v.unassigned.map(fmt).join('、')}</p>` : ''}
+    ${v.note ? `<p class="note">${esc(v.note)}</p>` : ''}
+    <div class="bar"><button class="btn primary" data-act="rv-apply">填入本期度數</button><button class="btn" data-act="rv-cancel">取消</button></div>
+  </div></div>`;
+}
+
+/* ---------- writes: one in flight per month doc, coalesced ---------- */
+const W = {};
+function patchMonth(id, patch) {
+  S.overlay[id] = merge(S.overlay[id] || {}, patch);
+  const w = W[id] ||= { pending: null, busy: false, t: 0 };
+  w.pending = merge(w.pending || {}, patch);
+  clearTimeout(w.t); w.t = setTimeout(() => flush(id), 500);
+  render();
+}
+async function flush(id) {
+  const w = W[id]; if (!w || !w.pending) return;
+  if (w.busy) { w.t = setTimeout(() => flush(id), 300); return; }
+  const p = w.pending; w.pending = null; w.busy = true;
+  try { await S.db.doc('months/' + id).update(p); }
+  catch (e) { toast('儲存失敗：' + (e.message || e.code) + '，請重新整理後再試'); }
+  w.busy = false;
+  if (!w.pending) { delete S.overlay[id]; render(); }
+}
+
+/* ---------- render ---------- */
+function render() {
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === S.tab));
+  const mob = mobile();
+  document.documentElement.classList.toggle('is-mobile', mob);
+  $('#mode-btn').textContent = mob ? '電腦版' : '手機版';
+  S.lastMob = mob;
+  const f = document.activeElement, fid = f && f.id, ss = f && f.selectionStart, se = f && f.selectionEnd;
+  const v = $('#view');
+  if (S.dbMissing) v.innerHTML = `<div class="banner">讀不到帳本資料。請先設定 GitHub 連線；或在 Windows 上用 PowerShell 執行 server.ps1 開啟本機伺服器。<br><br>
+    <button class="btn primary" data-act="setup">設定資料連線</button>
+    ${S.ghError ? `<p class="note" style="margin:10px 0 0">${esc(S.ghError)}</p>` : ''}</div>`;
+  else if (!S.ready.rooms || !S.ready.months) return;
+  else if (S.tab === 'rooms') v.innerHTML = viewRooms();
+  else if (S.tab === 'history') { v.innerHTML = viewHistory(); drawChart(); }
+  else v.innerHTML = viewMonth();
+  $('#modal').innerHTML = S.setup ? viewSetup() : S.review ? viewReview() : S.bill ? viewBill() : '';
+  if (fid) { const n = document.getElementById(fid); if (n && n !== f) { n.focus(); try { if (ss != null) n.setSelectionRange(ss, se); } catch (e) {} } }
+}
+
+function monthPicker() {
+  const ms = monthList();
+  return `<select id="pick-month" aria-label="選擇月份">${ms.map(m =>
+    `<option value="${esc(m.id)}" ${m.id === S.sel ? 'selected' : ''}>${esc(ymLabel(m.label))}${m.archived ? '' : ' ・記帳中'}</option>`).join('')}</select>`;
+}
+function nextLabel(l) {
+  const m = /^(\d+)-(\d+)/.exec(l); let y = +m[1], mo = +m[2] + 1;
+  if (y < 100) y += 100;
+  if (mo > 12) { mo = 1; y++; }
+  return `${y}-${String(mo).padStart(2, '0')}`;
+}
+
+function viewMonth() {
+  const ms = monthList();
+  if (!ms.length) return `<div class="empty-state">還沒有任何月份。到「房客」頁確認房間資料後，按下方按鈕建立第一個月。<br><br><button class="btn primary" data-act="new-month">建立帳單月份</button></div>`;
+  if (!S.sel || !S.months[S.sel]) S.sel = ms[0].id;
+  const m = getMonth(S.sel);
+  const latest = ms[0];
+  const nl = nextLabel(latest.label);
+  const head = `<div class="bar">
+      <h2>${esc(ymLabel(m.label))}</h2>
+      ${m.archived ? '<span class="chip mute">Excel 匯入・唯讀</span>' : '<span class="chip info">記帳中</span>'}
+      ${m.note ? `<span class="note">${esc(m.note)}</span>` : ''}
+      <span class="spacer"></span>
+      ${monthPicker()}
+      <button class="btn" data-act="bill" data-room="*">全部通知</button>
+      <button class="btn" data-act="xlsx" ${S.xlsxBusy ? 'disabled' : ''}>${S.xlsxBusy ? '產生中…' : '匯出 Excel'}</button>
+      <button class="btn hide-m" data-act="csv">匯出 CSV</button>
+      ${S.confirm === 'new' ? `<button class="btn primary" data-act="new-month">確定建立 ${esc(ymLabel(nl))}</button><button class="btn" data-act="cancel">取消</button>`
+        : `<button class="btn primary" data-act="ask-new">＋ 建立 ${esc(ymLabel(nl))}</button>`}
+    </div>`;
+  const ut = isRegular(m.label) ? viewUtility(m) : '';
+  if (mobile()) return head + (m.archived ? viewArchiveMobile(m) : viewLiveMobile(m)) + ut;
+  return head + (m.archived ? viewArchive(m) : viewLive(m)) + ut;
+}
+
+function liveTiles(c) {
+  const s = c.sum;
+  return `<div class="tiles">
+    <div class="tile"><span class="k">應收合計</span><span class="v">${money(s.total)}</span>
+      <span class="s">${c.missing ? `<span class="chip warn">還有 ${c.missing} 個電表沒抄</span>` : '電表都抄完了'}</span></div>
+    <div class="tile"><span class="k">未收</span><span class="v">${money(s.unpaid)}</span><span class="s">已收 ${s.nPaid} / ${s.nBill} 間</span></div>
+  </div>`;
+}
+
+function viewLiveMobile(m) {
+  const c = compute(m), id = S.sel;
+  const units = c.rows.filter(r => r.kind !== 'public');
+  const pubs = c.rows.filter(r => r.kind === 'public');
+  const counts = { todo: c.rows.filter(r => r.kind !== 'flat' && r.cur == null && (r.kind === 'public' || r.billable)).length, unpaid: units.filter(r => r.billable && !r.paid).length };
+  const show = r => S.mfilter === 'todo' ? r.kind !== 'flat' && r.cur == null && (r.kind === 'public' || r.billable)
+    : S.mfilter === 'unpaid' ? r.kind !== 'public' && r.billable && !r.paid : true;
+  const dial = r => `<div class="dial"><span class="prev">${fmt(r.prev)}</span>→
+      <input inputmode="numeric" id="cur-${r.id}" data-room="${r.id}" data-field="cur" value="${r.cur ?? ''}" placeholder="輸入本期度數" aria-label="${esc(r.id)} 本期度數">
+      <span class="use">${r.kind === 'public' ? (r.use == null ? '' : fmt(r.use) + ' 度') : r.own == null ? '' : fmt(r.own) + ' 度'}</span></div>`;
+  const pubCard = r => `<article class="mcard ${r.cur != null ? 'done' : ''}">
+      <div class="t"><b>${esc(r.id)}</b><span class="who">${esc(r.tenant)}</span>${r.cur == null ? '<span class="chip warn">待抄</span>' : '<span class="chip good">已抄</span>'}</div>
+      ${dial(r)}${roomCam(r.id)}</article>`;
+  const unitCard = r => {
+    const meter = r.kind !== 'flat', open = S.open[r.id];
+    return `<article class="mcard ${r.paid ? 'done' : ''}">
+      <div class="t"><b>${esc(r.id)}</b><span class="who">${esc(r.tenant) || '空房'}</span><span class="muted">${+r.people || 0} 人</span>
+        ${!r.billable ? '' : r.paid ? `<span class="chip good">已收${r.paidOn ? ' ' + md(r.paidOn) : ''}</span>` : r.pending ? '<span class="chip warn">待抄</span>' : '<span class="chip warn">未收</span>'}</div>
+      ${meter ? dial(r) + roomCam(r.id) : ''}
+      <div class="calc">
+        ${meter ? `<span>公電 ${r.share == null ? '待算' : '+' + fmt(r.share) + ' 度'}</span><span>電費 ${fmt(r.elec)}</span>` : '<span>整層包租，電費另計</span>'}
+        <span>水費 ${fmt(r.water)}</span><span>房租 ${fmt(r.rent)}</span>${+r.adj ? `<span>加減 ${fmt(r.adj)}</span>` : ''}</div>
+      ${open ? `<div class="more">
+        <label>人數<input inputmode="numeric" id="people-${r.id}" data-room="${r.id}" data-field="people" value="${r.people ?? ''}"></label>
+        <label>房租<input inputmode="numeric" id="rent-${r.id}" data-room="${r.id}" data-field="rent" value="${r.rent ?? ''}"></label>
+        ${r.billable ? `<label>實收<input inputmode="numeric" id="received-${r.id}" data-room="${r.id}" data-field="received" value="${r.received ?? ''}" placeholder="${r.pending ? '' : r.total}"></label>` : ''}</div>` : ''}
+      <div class="f"><span class="sum">${r.pending ? '—' : money(r.due)}${!r.pending && r.due !== r.total ? ` <small class="muted" style="font-size:12px">合計 ${fmt(r.total)}</small>` : ''}</span>
+        <button class="btn small" data-act="toggle-more" data-room="${r.id}">${open ? '收起' : '修改'}</button>
+        ${r.billable ? `<button class="btn small" data-act="bill" data-room="${r.id}">帳單</button>
+        <button class="pay ${r.paid ? 'on' : 'off'}" data-act="pay" data-room="${r.id}">${r.paid ? '已收' : '收款'}</button>` : ''}</div>
+    </article>`;
+  };
+  const list = [...pubs.filter(show).map(pubCard), ...units.filter(show).map(unitCard)];
+  return liveTiles(c) + floorButtons(m) + `
+    <div class="mfilter" role="group" aria-label="篩選">
+      <button data-act="mfilter" data-f="all" aria-pressed="${S.mfilter === 'all'}">全部</button>
+      <button data-act="mfilter" data-f="todo" aria-pressed="${S.mfilter === 'todo'}">待抄 ${counts.todo}</button>
+      <button data-act="mfilter" data-f="unpaid" aria-pressed="${S.mfilter === 'unpaid'}">未收 ${counts.unpaid}</button>
+    </div>
+    <p class="note">公電每人分攤：1F+3F ${c.perMain ?? '—'} 度、2F ${c.perF2 ?? '—'} 度　・　抄表期間 ${md(m.from)} → ${md(m.to)}
+      <input type="date" id="to-${id}" data-mfield="to" value="${esc(m.to || '')}" aria-label="本期抄表日" style="margin-top:4px"></p>
+    <div class="mlist">${list.join('') || '<div class="empty-state">這個篩選下沒有房間。</div>'}</div>`;
+}
+
+function viewArchiveMobile(m) {
+  const s = archiveSum(m);
+  const cards = (m.rows || []).filter(r => r.tenant !== '公電' && (r.total || r.tenant)).map(r => `<article class="mcard">
+      <div class="t"><b>${esc(r.room)}</b><span class="who">${esc(r.tenant) || '空房'}</span>${r.people != null ? `<span class="muted">${r.people} 人</span>` : ''}</div>
+      <div class="calc">${r.units != null ? `<span>${fmt(r.units)} 度</span>` : ''}<span>電費 ${fmt(r.elec)}</span><span>水費 ${fmt(r.water)}</span><span>房租 ${fmt(r.rent)}</span></div>
+      <div class="f"><span class="sum">${money(r.total)}</span>${r.total ? `<button class="btn small" data-act="bill" data-room="${esc(r.room)}">帳單</button>` : ''}</div>
+    </article>`).join('');
+  return `<div class="tiles">
+      <div class="tile"><span class="k">合計</span><span class="v">${money(s.total)}</span></div>
+      <div class="tile"><span class="k">電費</span><span class="v">${money(s.elec)}</span></div></div>
+    <p class="note">${m.from ? `抄表 ${esc(m.from)} → ${esc(m.to || '?')}・` : ''}照 Excel 原樣匯入</p>
+    <div class="mlist">${cards}</div>`;
+}
+
+function viewLive(m) {
+  const c = compute(m), s = c.sum, id = S.sel;
+  const pubs = c.rows.filter(r => r.kind === 'public');
+  const tiles = `<div class="tiles">
+    <div class="tile"><span class="k">應收合計</span><span class="v">${money(s.total)}</span>
+      <span class="s">${c.missing ? `<span class="chip warn">還有 ${c.missing} 個電表沒抄</span>` : '電表都抄完了'}</span></div>
+    <div class="tile"><span class="k">已收</span><span class="v">${money(s.paid)}</span><span class="s">${s.nPaid} / ${s.nBill} 間</span></div>
+    <div class="tile"><span class="k">未收</span><span class="v">${money(s.unpaid)}</span><span class="s">${s.nBill - s.nPaid} 間還沒繳</span></div>
+    <div class="tile"><span class="k">公電分攤（每人）</span>
+      <span class="v">${c.perMain == null ? '—' : c.perMain} <small class="muted" style="font-size:13px">度</small> ・ ${c.perF2 == null ? '—' : c.perF2} <small class="muted" style="font-size:13px">度</small></span>
+      <span class="s">1F+3F：${fmt(c.mainUse)} 度 ÷ ${c.mainPpl} 人 ・ 2F：${fmt(c.f2Use)} 度 ÷ ${c.f2Ppl} 人</span></div>
+  </div>`;
+  const meters = `<section class="panel">
+    <div class="hd"><h3>抄表</h3>
+      <span class="note">期間 <input type="date" id="from-${id}" data-mfield="from" value="${esc(m.from || '')}"> →
+      <input type="date" id="to-${id}" data-mfield="to" value="${esc(m.to || '')}"></span></div>
+    ${S.cam && S.ocrFloor ? `<div style="padding:10px 14px 0">${floorButtons(m)}</div>` : ''}
+    <div class="meters">${pubs.map(r => `<div class="meter">
+        <span class="name">${esc(r.id)}・${esc(r.tenant)}</span>
+        <div class="dial"><span class="prev">${fmt(r.prev)}</span>→
+          <input inputmode="numeric" id="cur-${r.id}" data-room="${r.id}" data-field="cur" value="${r.cur ?? ''}" placeholder="本期" aria-label="${esc(r.id)} 本期度數">
+          <span class="use">${r.use == null ? '待抄' : fmt(r.use) + ' 度'}</span></div>
+        ${roomCam(r.id)}
+      </div>`).join('')}</div>
+  </section>`;
+  const body = c.rows.filter(r => r.kind !== 'public').map(r => {
+    const meter = r.kind !== 'flat';
+    return `<tr class="${r.billable ? '' : 'empty'}">
+      <td class="room l">${esc(r.id)}</td>
+      <td class="l">${esc(r.tenant) || '<span class="muted">空房</span>'}</td>
+      <td><input class="w4" inputmode="numeric" id="people-${r.id}" data-room="${r.id}" data-field="people" value="${r.people ?? ''}" aria-label="人數"></td>
+      <td class="num">${meter ? fmt(r.prev) : '—'}</td>
+      <td>${meter ? `<input inputmode="numeric" id="cur-${r.id}" data-room="${r.id}" data-field="cur" value="${r.cur ?? ''}" placeholder="待抄" aria-label="${esc(r.id)} 本期度數">${roomCam(r.id)}` : '<span class="muted">—</span>'}</td>
+      <td class="num">${meter ? fmt(r.own) : '—'}</td>
+      <td class="num">${meter ? (r.share == null ? '待算' : fmt(r.share)) : '—'}</td>
+      <td class="num">${meter ? fmt(r.units) : '—'}</td>
+      <td class="num">${meter ? fmt(r.elec) : '0'}</td>
+      <td class="num">${fmt(r.water)}</td>
+      <td><input class="w6" inputmode="numeric" id="rent-${r.id}" data-room="${r.id}" data-field="rent" value="${r.rent ?? ''}" aria-label="房租"></td>
+      <td class="num total">${r.pending ? `<span class="chip warn">待抄</span>` : fmt(r.total)}</td>
+      <td>${r.billable ? `<input class="w6" inputmode="numeric" id="received-${r.id}" data-room="${r.id}" data-field="received" value="${r.received ?? ''}" placeholder="${r.pending ? '' : r.total}" aria-label="${esc(r.id)} 實收" title="空白 = 照合計收">` : ''}</td>
+      <td>${r.billable ? `<button class="pay ${r.paid ? 'on' : 'off'}" data-act="pay" data-room="${r.id}">${r.paid ? '已收' + (r.paidOn ? ' ' + md(r.paidOn) : '') : '未收'}</button>` : ''}</td>
+      <td>${r.billable ? `<button class="btn small" data-act="bill" data-room="${r.id}">帳單</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+  const table = `<section class="panel"><div class="hd"><h3>各房帳單</h3><span class="note">電費 = (本期 − 上期 + 公電分攤) × 單價；水費 = 人數 × 每人水費。「實收」填調整後最後要收的金額，空白就照合計收。</span></div>
+    <div class="tscroll"><table class="ledger">
+      <thead><tr><th class="l">房號</th><th class="l">房客</th><th>人數</th><th>上期</th><th>本期</th><th>自用度數</th><th>公電度數</th><th>計費度數</th><th>電費</th><th>水費</th><th>房租</th><th>合計</th><th>實收</th><th>收款</th><th></th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td class="room l">合計</td><td></td><td class="num" title="不含 B436">${c.rows.filter(r => r.kind !== 'public' && r.id !== 'B436').reduce((a, r) => a + (+r.people || 0), 0)}</td><td></td><td></td><td></td><td></td><td></td>
+        <td class="num">${fmt(s.elec)}</td><td class="num">${fmt(s.water)}</td><td class="num">${fmt(s.rent)}</td><td class="num">${fmt(s.total)}</td><td class="num">${fmt(s.received)}</td><td></td><td></td></tr></tfoot>
+    </table></div></section>`;
+  const del = `<div class="bar">${S.confirm === 'del'
+    ? `<span class="note">刪除後這個月份的抄表和收款紀錄都會消失。</span><button class="btn danger" data-act="del-month">確定刪除 ${esc(ymLabel(m.label))}</button><button class="btn" data-act="cancel">取消</button>`
+    : `<button class="btn small danger" data-act="ask-del">刪除這個月份</button>`}</div>`;
+  return tiles + meters + table + del;
+}
+
+function viewArchive(m) {
+  const s = archiveSum(m);
+  const legacy = !m.from;
+  const rows = (m.rows || []).map(r => {
+    const pub = r.tenant === '公電';
+    return `<tr class="${pub ? 'pub' : ''}"><td class="room l">${esc(r.room)}</td><td class="l">${esc(r.tenant) || '<span class="muted">空房</span>'}</td>
+      <td class="num">${r.people ?? ''}</td>
+      ${legacy ? '' : `<td class="num">${fmt(r.prev)}</td><td class="num">${fmt(r.cur)}</td><td class="num">${fmt(r.units)}</td>`}
+      <td class="num">${pub ? '' : fmt(r.elec)}</td><td class="num">${pub ? '' : fmt(r.water)}</td><td class="num">${pub ? '' : fmt(r.rent)}</td>
+      <td class="num total">${pub ? '' : fmt(r.total)}</td>${s.hasRecv ? `<td class="num">${fmt(r.received)}</td>` : ''}
+      <td>${!pub && r.total ? `<button class="btn small" data-act="bill" data-room="${esc(r.room)}">帳單</button>` : ''}</td></tr>`;
+  }).join('');
+  return `<div class="tiles">
+      <div class="tile"><span class="k">合計</span><span class="v">${money(s.total)}</span><span class="s">${m.from ? `抄表 ${esc(m.from)} → ${esc(m.to || '?')}` : '早期格式，欄位較少'}</span></div>
+      <div class="tile"><span class="k">電費</span><span class="v">${money(s.elec)}</span></div>
+      <div class="tile"><span class="k">房租</span><span class="v">${money(s.rent)}</span></div>
+      <div class="tile"><span class="k">${s.hasRecv ? '實收' : '水費'}</span><span class="v">${money(s.hasRecv ? s.received : s.water)}</span></div>
+    </div>
+    <section class="panel"><div class="hd"><h3>各房帳單</h3><span class="note">數字照 Excel 工作表「${esc(m.label)}」原樣匯入，不重新計算。</span></div>
+    <div class="tscroll"><table class="ledger"><thead><tr><th class="l">房號</th><th class="l">房客</th><th>人數</th>
+      ${legacy ? '' : '<th>上期</th><th>本期</th><th>計費度數</th>'}<th>電費</th><th>水費</th><th>房租</th><th>合計</th>${s.hasRecv ? '<th>實收</th>' : ''}<th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div></section>`;
+}
+
+/* ---------- tenant notice: Chinese, plus the tenant's own language ---------- */
+// A sheet labelled 115-09 bills September's rent and August's water & electricity.
+const NATIONS = { tw: '台灣', id: '印尼', vi: '越南', th: '泰國' };
+const MONTHS = {
+  id: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+  th: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'],
+};
+const pad2 = n => String(n).padStart(2, '0');
+const LANG = {
+  tw: { hi: '您好', rentOnly: p => `${p.y}年${p.m}月房租`, both: p => `${p.y}年${p.m}月房租及${p.uy}年${pad2(p.um)}月水電費用`,
+    room: '房號', elec: '電費', water: '水費', rent: '房租', other: '其他', disc: '折抵', total: '合計', owner: '房東', pending: '尚未抄表' },
+  id: { hi: 'Halo', rentOnly: p => `Sewa bulan ${MONTHS.id[p.m - 1]} ${p.y}`, both: p => `Sewa bulan ${MONTHS.id[p.m - 1]} ${p.y} dan biaya air & listrik bulan ${MONTHS.id[p.um - 1]} ${p.uy}`,
+    room: 'Kamar', elec: 'Listrik', water: 'Air', rent: 'Sewa', other: 'Lain-lain', disc: 'Potongan', total: 'Total', owner: 'Pemilik', pending: 'belum dicatat' },
+  vi: { hi: 'Xin chào', rentOnly: p => `Tiền thuê nhà tháng ${p.m}/${p.y}`, both: p => `Tiền thuê nhà tháng ${p.m}/${p.y} và tiền điện nước tháng ${pad2(p.um)}/${p.uy}`,
+    room: 'Phòng', elec: 'Tiền điện', water: 'Tiền nước', rent: 'Tiền thuê nhà', other: 'Khác', disc: 'Giảm trừ', total: 'Tổng cộng', owner: 'Chủ nhà', pending: 'chưa ghi số' },
+  th: { hi: 'สวัสดี', rentOnly: p => `ค่าเช่าเดือน${MONTHS.th[p.m - 1]} ${p.y}`, both: p => `ค่าเช่าเดือน${MONTHS.th[p.m - 1]} ${p.y} และค่าน้ำค่าไฟเดือน${MONTHS.th[p.um - 1]} ${p.uy}`,
+    room: 'ห้อง', elec: 'ค่าไฟ', water: 'ค่าน้ำ', rent: 'ค่าเช่า', other: 'อื่นๆ', disc: 'ส่วนลด', total: 'รวม', owner: 'เจ้าของบ้าน', pending: 'ยังไม่ได้จด' },
+};
+function billPeriod(label) {
+  const [ry, rm] = label.split('-').map(Number), y = (ry < 100 ? ry + 100 : ry) + 1911;
+  return { y, m: rm, uy: rm === 1 ? y - 1 : y, um: rm === 1 ? 12 : rm - 1 };
+}
+function noticeFor(m, roomId) {
+  let d;
+  if (m.archived) {
+    const r = (m.rows || []).find(x => x.room === roomId); if (!r) return '';
+    const cfg = S.rooms[roomId] || {};
+    d = { tenant: r.tenant || '', flat: r.prev == null && !r.elec, elec: r.elec ?? 0, water: r.water ?? 0, rent: r.rent ?? 0, adj: 0, total: r.total ?? 0,
+      lang: cfg.tenant && cfg.tenant === r.tenant ? cfg.nationality : 'tw' };
+  } else {
+    const r = compute(m).rows.find(x => x.id === roomId); if (!r) return '';
+    d = { tenant: r.tenant || '', flat: r.kind === 'flat', elec: r.pending ? null : r.elec, water: r.water, rent: +r.rent || 0, adj: +r.adj || 0,
+      adjNote: r.adjNote, total: r.due, lang: S.rooms[roomId]?.nationality };
+  }
+  const p = billPeriod(m.label), name = S.rooms[roomId]?.billName || roomId;
+  const owner = [S.settings.landlordName, S.settings.landlordPhone].filter(Boolean).join(' ');
+  const n = v => String(Math.round(v));
+  const block = L => {
+    const elec = `${L.elec}: ${d.elec == null ? L.pending : n(d.elec)}`, water = `${L.water}: ${n(d.water)}`;
+    return [L.hi, d.flat ? L.rentOnly(p) : L.both(p), `${L.room}: ${name} ${d.tenant}`.trim(),
+      ...(d.flat ? [water, elec] : [elec, water]), `${L.rent}: ${n(d.rent)}`,
+      d.adj ? `${d.adj > 0 ? L.other : L.disc}: ${n(d.adj)}${d.adjNote ? ` (${d.adjNote})` : ''}` : null,
+      `${L.total}: ${n(d.total)}`, owner ? `${L.owner}: ${owner}` : null].filter(Boolean).join('\n');
+  };
+  const lang = LANG[d.lang] && d.lang !== 'tw' ? d.lang : null;
+  return block(LANG.tw) + (lang ? '\n\n' + block(LANG[lang]) : '');
+}
+function noticeRooms(m) {
+  if (m.archived) return (m.rows || []).filter(r => r.tenant && r.tenant !== '公電' && r.total).map(r => r.room);
+  return compute(m).rows.filter(r => r.kind !== 'public' && r.billable).map(r => r.id);
+}
+function billText(m, roomId) {
+  return roomId === '*' ? noticeRooms(m).map(id => noticeFor(m, id)).join('\n\n\n') : noticeFor(m, roomId);
+}
+function viewBill() {
+  const m = getMonth(S.sel); if (!m) return '';
+  return `<div class="overlay" data-act="close-bill"><div class="dialog" role="dialog" aria-label="房租通知">
+    <div class="bar"><h2 style="font-size:18px">${S.bill === '*' ? '全部房租通知' : '房租通知'}</h2><span class="spacer"></span><button class="btn small" data-act="close-bill">關閉</button></div>
+    ${!S.settings.landlordName ? '<p class="note">到「房客」頁填房東姓名和電話，通知最後就會附上。</p>' : ''}
+    <pre id="bill-text">${esc(billText(m, S.bill))}</pre>
+    <div class="bar">${S.bill === '*' ? '' : `<a class="btn line" href="https://line.me/R/share?text=${encodeURIComponent(billText(m, S.bill))}" target="_blank" rel="noopener">用 LINE 傳送</a>`}
+      <button class="btn ${S.bill === '*' ? 'primary' : ''}" data-act="copy">複製文字</button>
+      <span class="note">${S.bill === '*' ? '貼到 LINE 傳給房客' : '按「用 LINE 傳送」會打開 LINE，選房客後送出'}</span></div>
+  </div></div>`;
+}
+
+function viewRooms() {
+  const live = monthList().find(m => !m.archived);
+  const rs = roomList();
+  const meterRate = rs.find(r => r.kind === 'unit')?.rate ?? 5.5;
+  const card = r => {
+    const pub = r.kind === 'public', p = 'r-' + r.id + '-';
+    return `<form class="rcard" data-room="${r.id}">
+      <div class="hd"><b>${esc(r.id)}</b>
+        ${pub ? `<span class="chip mute">${r.pool === 'f2' ? '2F' : '1F+3F'} 公電表</span>` : r.kind === 'flat' ? '<span class="chip info">整層包租</span>'
+          : r.tenant ? '<span class="chip good">出租中</span>' : '<span class="chip mute">空房</span>'}</div>
+      <div class="form">
+        <label>${pub ? '名稱' : '房客'}<input type="text" id="${p}tenant" name="tenant" value="${esc(r.tenant)}"></label>
+        ${pub ? '' : `
+        <label>人數<input type="number" min="0" id="${p}people" name="people" value="${r.people ?? 0}"></label>
+        <label>房租<input type="number" min="0" id="${p}rent" name="rent" value="${r.rent ?? 0}"></label>
+        <label>押金<input type="number" min="0" id="${p}deposit" name="deposit" value="${r.deposit ?? 0}"></label>
+        <label>入住日<input type="date" id="${p}moveIn" name="moveIn" value="${esc(r.moveIn)}"></label>
+        <label>電話<input type="tel" id="${p}phone" name="phone" value="${esc(r.phone)}"></label>
+        <label>國籍（通知語言）<select id="${p}nationality" name="nationality">${Object.entries(NATIONS).map(([k, v]) =>
+          `<option value="${k}" ${(r.nationality || 'tw') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        <label>通知上的房號<input type="text" id="${p}billName" name="billName" value="${esc(r.billName || r.id)}"></label>
+        ${r.kind === 'flat' ? '' : `<label>電費單價（元/度）<input type="number" step="0.1" min="0" id="${p}rate" name="rate" value="${r.rate ?? 5.5}"></label>`}
+        <label>水費（元/人）<input type="number" min="0" id="${p}waterPer" name="waterPer" value="${r.waterPer ?? 100}"></label>
+        <label class="full">備註<input type="text" id="${p}note" name="note" value="${esc(r.note)}"></label>`}
+      </div>
+      ${pub || r.kind === 'flat' ? '' : `<div class="checks">
+        <label><input type="checkbox" id="${p}shareMain" name="shareMain" ${r.shareMain ? 'checked' : ''}> 分攤 1F+3F 公電</label>
+        <label><input type="checkbox" id="${p}shareF2" name="shareF2" ${r.shareF2 ? 'checked' : ''}> 分攤 2F 公電</label></div>`}
+      <div class="ft">
+        <button class="btn primary small" type="submit">儲存</button>
+        ${pub ? '' : `<button class="btn small" type="button" data-act="vacate" data-room="${r.id}">退租清空</button>`}
+        ${live && !pub ? `<label class="note" style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="applyLive" id="${p}applyLive" checked> 同時更新 ${esc(ymLabel(live.label))}</label>` : ''}
+      </div>
+    </form>`;
+  };
+  return `<div class="bar"><h2>房客與房間</h2><span class="spacer"></span>
+      <label class="note">全部房間電費單價 <input type="number" step="0.1" id="bulk-rate" value="${meterRate}" style="width:6ch"></label>
+      <button class="btn small" data-act="bulk-rate">套用</button></div>
+    <p class="note">這裡的設定會用在之後建立的月份。勾選「同時更新」會把人數、房租、分攤設定一起改到記帳中的月份。</p>
+    <form class="rcard" data-settings="1" style="max-width:520px">
+      <div class="hd"><b style="font-family:var(--f-body)">房東資料</b><span class="note">會印在每張房租通知的最後一行</span></div>
+      <div class="form">
+        <label>姓名<input type="text" id="set-landlordName" name="landlordName" value="${esc(S.settings.landlordName || '')}"></label>
+        <label>電話<input type="tel" id="set-landlordPhone" name="landlordPhone" value="${esc(S.settings.landlordPhone || '')}"></label>
+      </div>
+      <div class="ft"><button class="btn primary small" type="submit">儲存</button></div>
+    </form>
+    <div class="rooms">${rs.map(card).join('')}</div>`;
+}
+
+/* ---------- GitHub Pages: where the data lives ---------- */
+function ghForm() {
+  return {
+    owner: $('#gh-owner').value.trim(),
+    repo: $('#gh-repo').value.trim().replace(/^\/+|\/+$/g, ''),
+    branch: $('#gh-branch').value.trim() || 'main',
+    path: $('#gh-path').value.trim().replace(/^\/+|\/+$/g, '') || 'db',
+    token: $('#gh-token').value.trim() || (window.rentGh ? window.rentGh.config().token || '' : ''),
+  };
+}
+function viewSetup() {
+  const c = window.rentGh ? window.rentGh.config() : {};
+  const err = window.rentGh?.lastError || S.ghError || '';
+  return `<div class="overlay"><div class="dialog" role="dialog" aria-label="資料連線設定">
+    <div class="bar"><h2 style="font-size:18px">資料連線</h2><span class="spacer"></span>
+      <button class="btn small" data-act="close-setup">關閉</button></div>
+    <p class="note">帳本資料放在你自己的 GitHub 私有 repo，網頁本身只是靜態頁面。下面的 fine-grained token 只會存在這台裝置的瀏覽器，不會上傳到別的地方。</p>
+    <div class="form">
+      <label>Owner<input type="text" id="gh-owner" value="${esc(c.owner || '')}" placeholder="你的 GitHub 帳號" autocomplete="off" spellcheck="false"></label>
+      <label>Repo<input type="text" id="gh-repo" value="${esc(c.repo || '')}" placeholder="rent" autocomplete="off" spellcheck="false"></label>
+      <label>Branch<input type="text" id="gh-branch" value="${esc(c.branch || 'main')}" autocomplete="off" spellcheck="false"></label>
+      <label>資料夾<input type="text" id="gh-path" value="${esc(c.path || 'db')}" autocomplete="off" spellcheck="false"></label>
+      <label class="full">Fine-grained token<input type="password" id="gh-token" value="" placeholder="${c.token ? '已儲存（留空表示不變更）' : 'github_pat_...'}" autocomplete="off" spellcheck="false"></label>
+    </div>
+    <p class="note">建立方式：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens。Repository access 只選這個 repo，權限勾 <b>Contents: Read and write</b>（Metadata 會自動包含）。</p>
+    <p class="note" id="gh-status" style="min-height:1.6em">${err ? `<span class="chip warn">${esc(err)}</span>` : ''}</p>
+    <div class="bar">
+      <button class="btn primary" data-act="gh-save">儲存並連線</button>
+      <button class="btn" data-act="gh-test">測試連線</button>
+      <button class="btn small danger" data-act="gh-clear">清除這台裝置的設定</button>
+    </div>
+  </div></div>`;
+}
+
+function viewHistory() {
+  const ms = monthList().filter(m => isRegular(m.label));
+  const rows = ms.map(m => {
+    if (m.archived) { const s = archiveSum(m); return { m, ...s }; }
+    const s = compute(m).sum; return { m, elec: s.elec, water: s.water, rent: s.rent, total: s.total };
+  });
+  return `<div class="bar"><h2>歷年收入</h2><span class="spacer"></span>
+      <button class="btn" data-act="xlsx" ${S.xlsxBusy ? 'disabled' : ''}>${S.xlsxBusy ? '產生中…' : '匯出 Excel（全部月份）'}</button>
+      <button class="btn small" data-act="range">${S.showAll ? '只看近三年' : '看全部 ' + ms.length + ' 個月'}</button></div>
+    <section class="panel"><div class="hd"><h3>每月應收合計</h3><span class="note">滑過長條看細項，點一下打開那個月</span></div>
+      <div class="chart" id="chart" style="padding:8px 14px 14px"></div></section>
+    ${utilityHistory()}
+    <section class="panel"><div class="tscroll"><table class="ledger"><thead><tr><th class="l">月份</th><th class="l hide-m">抄表期間</th><th class="hide-m">電費</th><th class="hide-m">水費</th><th>房租</th><th>合計</th></tr></thead>
+      <tbody>${rows.map(x => `<tr><td class="l"><button class="btn small" data-act="open" data-id="${esc(x.m.id)}">${esc(ymLabel(x.m.label))}</button></td>
+        <td class="l num muted hide-m">${x.m.from ? esc(md(x.m.from)) + ' → ' + esc(md(x.m.to)) : ''}</td>
+        <td class="num hide-m">${fmt(x.elec)}</td><td class="num hide-m">${fmt(x.water)}</td><td class="num">${fmt(x.rent)}</td><td class="num total">${fmt(x.total)}</td></tr>`).join('')}</tbody>
+    </table></div></section>`;
+}
+
+function drawChart() {
+  const box = $('#chart'); if (!box) return;
+  let ms = monthList().filter(m => isRegular(m.label)).reverse();
+  if (!S.showAll) ms = ms.slice(-36);
+  const data = ms.map(m => ({ id: m.id, label: m.label, v: monthTotal(m), live: !m.archived }));
+  const W = Math.max(300, box.clientWidth - 28), H = 230, padL = 44, padB = 26, padT = 18;
+  const max = Math.max(1, ...data.map(d => d.v));
+  const step = max > 100000 ? 40000 : 20000, top = Math.ceil(max / step) * step;
+  const y = v => padT + (H - padT - padB) * (1 - v / top);
+  const bw = (W - padL) / data.length, w = Math.max(2, bw - 2);
+  let g = '';
+  for (let t = 0; t <= top; t += step) g += `<line x1="${padL}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/>
+    <text x="${padL - 6}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${t / 10000} 萬</text>`;
+  data.forEach((d, i) => {
+    const x = padL + i * bw + 1, yy = y(d.v), h = y(0) - yy, r = Math.min(4, w / 2, h);
+    const path = h > 0 ? `M${x},${y(0)}V${yy + r}Q${x},${yy} ${x + r},${yy}H${x + w - r}Q${x + w},${yy} ${x + w},${yy + r}V${y(0)}Z` : '';
+    g += `<path d="${path}" fill="var(--accent)" opacity="${d.live ? 0.55 : 1}"/>`;
+    g += `<rect x="${padL + i * bw}" y="${padT}" width="${bw}" height="${H - padT - padB}" fill="transparent" data-i="${i}" data-act="open" data-id="${esc(d.id)}" style="cursor:pointer"/>`;
+    if (/-01$/.test(d.label) || i === 0) g += `<text x="${x}" y="${H - 8}" font-size="11" fill="var(--muted)">${d.label.split('-')[0]} 年</text>`;
+  });
+  const last = data[data.length - 1];
+  if (last) g += `<text x="${padL + (data.length - 1) * bw + bw / 2}" y="${y(last.v) - 5}" text-anchor="end" font-size="11" fill="var(--ink)" class="num">${fmt(last.v)}</text>`;
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每月應收合計長條圖">${g}</svg><div class="tip" hidden></div>`;
+  const tip = box.querySelector('.tip');
+  box.querySelectorAll('rect[data-i]').forEach(rc => {
+    rc.addEventListener('mouseenter', () => {
+      const d = data[+rc.dataset.i];
+      tip.innerHTML = `${esc(ymLabel(d.label))}${d.live ? '（記帳中）' : ''}<br><b class="num">$${fmt(d.v)}</b>`;
+      tip.hidden = false;
+      const k = (box.clientWidth - 28) / W;
+      tip.style.left = Math.min(Math.max(60, 14 + (+rc.getAttribute('x') + bw / 2) * k), box.clientWidth - 60) + 'px';
+      tip.style.top = (8 + y(d.v) * k - 4) + 'px';
+    });
+    rc.addEventListener('mouseleave', () => tip.hidden = true);
+  });
+}
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => {
+  if (mobile() !== S.lastMob) render(); else if (S.tab === 'history') drawChart();
+}, 150); });
+
+/* ---------- actions ---------- */
+async function createNextMonth() {
+  const ms = monthList(), base = ms[0];
+  const label = base ? nextLabel(base.label) : (() => { const d = new Date(); return `${d.getFullYear() - 1911}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
+  if (S.months[label]) { toast(ymLabel(label) + ' 已經存在'); return; }
+  const rows = {};
+  for (const r of roomList()) {
+    let prev = null;
+    if (base?.archived) prev = (base.rows || []).find(x => x.room === r.id)?.cur ?? null;
+    else if (base) { const b = getMonth(base.id).rows?.[r.id]; prev = b ? (b.cur ?? b.prev ?? null) : null; }
+    rows[r.id] = { order: r.order, kind: r.kind, pool: r.pool ?? null, tenant: r.tenant || '', people: +r.people || 0, rent: +r.rent || 0,
+      rate: +r.rate || 0, waterPer: +r.waterPer || 0, shareMain: !!r.shareMain, shareF2: !!r.shareF2,
+      prev: r.kind === 'flat' ? null : prev, cur: null, adj: 0, adjNote: '', paid: false, paidOn: '' };
+  }
+  const [y, mo] = label.split('-').map(Number);
+  const doc = { label, sort: y * 10000 + mo * 100 + 99, archived: false, from: base?.to || '', to: '', rows };
+  try { await S.db.doc('months/' + label).set(doc); S.sel = label; save('sel', label); S.confirm = null; S.ocr = {}; toast('已建立 ' + ymLabel(label)); }
+  catch (e) { toast('建立失敗：' + (e.message || e.code)); }
+}
+
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-act], .tabs button'); if (!t) return;
+  if (t.dataset.tab) { S.dirty = false; S.tab = t.dataset.tab; save('tab', S.tab); S.confirm = null; render(); return; }
+  const act = t.dataset.act, room = t.dataset.room;
+  if (act === 'close-bill' && t.classList.contains('overlay') && e.target !== t) return;
+  switch (act) {
+    case 'ask-new': S.confirm = 'new'; render(); break;
+    case 'ask-del': S.confirm = 'del'; render(); break;
+    case 'cancel': S.confirm = null; render(); break;
+    case 'setup': S.setup = true; render(); break;
+    case 'close-setup': S.setup = false; render(); break;
+    case 'gh-test': {
+      if (!window.rentGh) { toast('這個頁面沒有 GitHub 連線功能'); break; }
+      const el = $('#gh-status'); el.innerHTML = '<span class="chip info">測試中…</span>';
+      try {
+        const r = await window.rentGh.test(ghForm());
+        el.innerHTML = `<span class="chip good">連線成功：${esc(r.repo)}${r.private ? '（私有）' : '（公開！建議改成私有）'}</span>`
+          + (r.push ? '' : '<br><span class="chip warn">這個 token 似乎沒有寫入權限，請確認 Contents: Read and write</span>')
+          + (r.pathOk ? '' : `<br><span class="chip warn">找不到資料夾「${esc($('#gh-path').value.trim() || 'db')}」</span>`);
+      } catch (err) { el.innerHTML = `<span class="chip warn">${esc(err.message || err)}</span>`; }
+      break;
+    }
+    case 'gh-save': {
+      if (!window.rentGh) { toast('這個頁面沒有 GitHub 連線功能'); break; }
+      const c = ghForm();
+      if (!c.owner || !c.repo || !c.token) { $('#gh-status').innerHTML = '<span class="chip warn">owner、repo、token 都要填</span>'; break; }
+      window.rentGh.saveConfig(c); toast('設定已儲存，重新載入中…'); location.reload(); break;
+    }
+    case 'gh-clear': {
+      if (!window.rentGh || !confirm('清除這台裝置的 GitHub 設定？')) break;
+      window.rentGh.clearConfig(); location.reload(); break;
+    }
+    case 'new-month': await createNextMonth(); render(); break;
+    case 'del-month': try { await S.db.doc('months/' + S.sel).delete(); S.sel = null; S.confirm = null; toast('已刪除'); } catch (err) { toast('刪除失敗：' + (err.message || err.code)); } render(); break;
+    case 'pay': { const r = getMonth(S.sel).rows[room]; patchMonth(S.sel, { rows: { [room]: { paid: !r.paid, paidOn: r.paid ? '' : today() } } }); break; }
+    case 'bill': S.bill = room; render(); break;
+    case 'close-bill': S.bill = null; render(); break;
+    case 'copy': { const txt = $('#bill-text').textContent;
+      try { await navigator.clipboard.writeText(txt); toast('已複製'); S.bill = null; render(); }
+      catch (err) { const r = document.createRange(); r.selectNodeContents($('#bill-text')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('已選取文字，請按複製'); } break; }
+    case 'open': S.sel = t.dataset.id; save('sel', S.sel); S.tab = 'month'; save('tab', 'month'); S.ocr = {}; render(); scrollTo(0, 0); break;
+    case 'range': S.showAll = !S.showAll; render(); break;
+    case 'mode': S.mode = mobile() ? 'desktop' : 'mobile'; save('mode', S.mode); render(); break;
+    case 'mfilter': S.mfilter = t.dataset.f; render(); break;
+    case 'photo-floor': { if (S.busyFloor) break; S.photoFor = t.dataset.floor; S.photoRoom = null; const pi = $('#photo-in'); pi.value = ''; pi.click(); break; }
+    case 'photo-room': { if (S.busyRoom) break; S.photoRoom = t.dataset.room; S.photoFor = null; const pi = $('#photo-in'); pi.value = ''; pi.click(); break; }
+    case 'rv-cancel': S.review = null; render(); break;
+    case 'rv-apply': {
+      const rows = {};
+      for (const i of S.review.items) if (i.value != null) {
+        rows[i.room] = { cur: i.value };
+        S.ocr[i.room] = { warn: !!i.warn, msg: `電表照片 ${fmt(i.value)}` + (i.warn ? '・' + i.warn : '') };
+        if (i.digits && i.value === i.ocrValue && window.rentMeter) window.rentMeter.learn(i.digits);
+      }
+      S.review = null;
+      if (Object.keys(rows).length) { patchMonth(S.sel, { rows }); toast(`已填入 ${Object.keys(rows).length} 個電表`); } else render();
+      break;
+    }
+    case 'toggle-more': S.open[room] = !S.open[room]; render(); break;
+    case 'csv': exportCsv(); break;
+    case 'xlsx': exportXlsx(); break;
+    case 'vacate': { const f = t.closest('form'); for (const n of ['tenant', 'phone', 'moveIn', 'note']) if (f[n]) f[n].value = '';
+      for (const n of ['people', 'rent', 'deposit']) if (f[n]) f[n].value = 0; toast('已清空，按「儲存」生效'); break; }
+    case 'bulk-rate': { const v = Number($('#bulk-rate').value); if (!(v > 0)) { toast('請輸入大於 0 的單價'); break; }
+      try { for (const r of roomList().filter(r => r.kind === 'unit')) await S.db.doc('rooms/' + r.id).update({ rate: v });
+        toast('全部房間單價改為 ' + v + ' 元'); } catch (err) { toast('更新失敗：' + (err.message || err.code)); } break; }
+  }
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'pick-month') return;
+  if (t.dataset.rv && S.review) { const i = S.review.items.find(x => x.room === t.dataset.rv); if (i) i.value = numOrNull(t.value.replace(/[^\d]/g, '')); return; }
+  if (t.closest('form.rcard')) { S.dirty = true; return; }
+  if (t.dataset.mfield && S.sel) { patchMonth(S.sel, { [t.dataset.mfield]: t.value }); return; }
+  if (t.dataset.ut && S.sel) {
+    if (t.dataset.ut === 'span') { patchMonth(S.sel, { utility: { span: +t.value } }); return; }
+    const v = t.dataset.utf === 'amount' ? numOrNull(t.value.replace(/[^\d.]/g, '')) : t.value;
+    patchMonth(S.sel, { utility: { [t.dataset.ut]: { [t.dataset.utf]: v } } });
+    return;
+  }
+  if (!t.dataset.room || !t.dataset.field || !S.sel) return;
+  const f = t.dataset.field;
+  let v = f === 'adjNote' ? t.value : numOrNull(t.value.replace(/[^\d.-]/g, ''));
+  if (typeof v === 'number' && Number.isNaN(v)) return;
+  patchMonth(S.sel, { rows: { [t.dataset.room]: { [f]: v } } });
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'pick-month') { S.sel = e.target.value; save('sel', S.sel); S.confirm = null; S.ocr = {}; render(); }
+  if (e.target.id === 'photo-in' && e.target.files[0]) {
+    const f = e.target.files[0];
+    if (S.photoRoom) { const room = S.photoRoom; S.photoRoom = null; readRoom(room, f); }
+    else if (S.photoFor) readFloor(S.photoFor, f);
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (S.bill) { S.bill = null; render(); }
+  else if (S.setup) { S.setup = false; render(); }
+});
+
+document.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (e.target.dataset.settings) {
+    const f = e.target, data = { landlordName: f.landlordName.value.trim(), landlordPhone: f.landlordPhone.value.trim() };
+    try { S.dirty = false; await S.db.doc('config/settings').set(data); toast('房東資料已儲存'); }
+    catch (err) { toast('儲存失敗：' + (err.message || err.code)); }
+    return;
+  }
+  const f = e.target, id = f.dataset.room, r = S.rooms[id]; if (!r) return;
+  const data = { tenant: f.tenant.value.trim() };
+  if (r.kind !== 'public') {
+    Object.assign(data, { people: +f.people.value || 0, rent: +f.rent.value || 0, deposit: +f.deposit.value || 0,
+      moveIn: f.moveIn.value, phone: f.phone.value.trim(), waterPer: +f.waterPer.value || 0, note: f.note.value.trim(),
+      nationality: f.nationality.value, billName: f.billName.value.trim() || id });
+    if (f.rate) data.rate = +f.rate.value || 0;
+    if (f.shareMain) { data.shareMain = f.shareMain.checked; data.shareF2 = f.shareF2.checked; }
+  }
+  try {
+    S.dirty = false;
+    await S.db.doc('rooms/' + id).update(data);
+    const live = monthList().find(m => !m.archived);
+    if (live && f.applyLive?.checked && live.rows?.[id]) {
+      const keep = ['tenant', 'people', 'rent', 'rate', 'waterPer', 'shareMain', 'shareF2'];
+      patchMonth(live.id, { rows: { [id]: Object.fromEntries(keep.filter(k => k in data).map(k => [k, data[k]])) } });
+    }
+    toast(id + ' 已儲存');
+  } catch (err) { toast('儲存失敗：' + (err.message || err.code)); }
+});
+
+async function exportCsv() {
+  const m = getMonth(S.sel); if (!m) return;
+  let head, lines;
+  if (m.archived) {
+    head = ['房號', '房客', '人數', '上期', '本期', '計費度數', '電費', '水費', '房租', '合計'];
+    lines = (m.rows || []).map(r => [r.room, r.tenant, r.people, r.prev, r.cur, r.units, r.elec, r.water, r.rent, r.total]);
+  } else {
+    const c = compute(m);
+    head = ['房號', '房客', '人數', '上期', '本期', '自用度數', '公電度數', '計費度數', '電費', '水費', '房租', '合計', '實收', '收款'];
+    lines = c.rows.map(r => r.kind === 'public' ? [r.id, r.tenant, '', r.prev, r.cur, r.use, '', '', '', '', '', '', '', '']
+      : [r.id, r.tenant, r.people, r.prev, r.cur, r.own, r.share, r.units, r.elec, r.water, r.rent, r.total, r.billable ? r.due : '', r.paid ? '已收 ' + r.paidOn : '未收']);
+  }
+  const csv = '﻿' + [head, ...lines].map(l => l.map(v => { v = v ?? ''; return /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v; }).join(',')).join('\r\n');
+  if (!S.dl) { toast('這個檢視無法下載檔案'); return; }
+  try { await S.dl.save({ filename: `房租-${m.label}.csv`, data: csv }); } catch (err) { if (err?.code !== 'cancelled') toast('下載沒有完成'); }
+}
+
+/* ---------- Excel export: every month as its own sheet, with formulas ---------- */
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => res(window.XLSX); s.onerror = rej; document.head.appendChild(s);
+  });
+}
+const cell = (v, f) => {
+  const c = v == null || v === '' ? { t: 's', v: '' } : typeof v === 'number' ? { t: 'n', v } : typeof v === 'boolean' ? { t: 'b', v } : { t: 's', v: String(v) };
+  if (f) c.f = f;
+  return c;
+};
+function sheetFromGrid(X, grid) {   // grid: {A1: cell}
+  let maxR = 0, maxC = 0;
+  for (const ref in grid) { const a = X.utils.decode_cell(ref); maxR = Math.max(maxR, a.r); maxC = Math.max(maxC, a.c); }
+  grid['!ref'] = X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxR, c: maxC } });
+  return grid;
+}
+function archiveSheet(X, m) {
+  const g = {};
+  if (m.cells) {
+    for (const ref in m.cells) {
+      const [v, f] = m.cells[ref];
+      g[ref] = cell(v, f);
+      if (/^[A-Z]+1$/.test(ref) && typeof v === 'number' && v > 30000) g[ref].z = 'yyyy/m/d';
+    }
+  } else {
+    const head = ['房號', '姓名', '人數', '上期', '本期', '計費度數', '電費', '水費', '房租', '合計'];
+    head.forEach((h, i) => g[X.utils.encode_cell({ r: 0, c: i })] = cell(h));
+    (m.rows || []).forEach((r, i) => [r.room, r.tenant, r.people, r.prev, r.cur, r.units, r.elec, r.water, r.rent, r.total]
+      .forEach((v, c) => g[X.utils.encode_cell({ r: i + 1, c })] = cell(v)));
+  }
+  const ws = sheetFromGrid(X, g);
+  ws['!cols'] = [{ wch: 7 }, { wch: 12 }, { wch: 6 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 9 }, { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 9 }, { wch: 24 }, { wch: 14 }];
+  return ws;
+}
+function liveSheet(X, m) {
+  const c = compute(m), rows = c.rows, n = rows.length, last = n + 1, g = {};
+  const put = (ref, v, f) => g[ref] = cell(v, f);
+  ['房號', '姓名', '人數', '上期度數', '本期度數', '自用度數', '公電度數', '計費度數', '電費', '水費', '房租', '加減', '合計', '收款',
+    '電費單價', '每人水費', '分攤1F+3F公電', '分攤2F公電', '加減說明', '實收'].forEach((h, i) => put(X.utils.encode_cell({ r: 0, c: i }), h));
+  const S0 = n + 4;                       // summary block starts two rows below the totals row
+  const R = { mainUse: S0, mainPpl: S0 + 1, perMain: S0 + 2, f2Use: S0 + 3, f2Ppl: S0 + 4, perF2: S0 + 5, paid: S0 + 6, unpaid: S0 + 7, period: S0 + 8 };
+  const mainRefs = [], f2Refs = [];
+  rows.forEach((r, i) => {
+    const x = i + 2;
+    put('A' + x, r.id); put('B' + x, r.tenant || '');
+    if (r.kind === 'public') {
+      put('D' + x, r.prev); put('E' + x, r.cur);
+      put('F' + x, r.use ?? '', `IF(E${x}="","",E${x}-D${x})`);
+      (r.pool === 'f2' ? f2Refs : mainRefs).push('F' + x);
+      return;
+    }
+    put('C' + x, +r.people || 0);
+    if (r.kind !== 'flat') {
+      put('D' + x, r.prev); put('E' + x, r.cur);
+      put('F' + x, r.own ?? '', `IF(E${x}="","",E${x}-D${x})`);
+      put('G' + x, r.share ?? 0, `C${x}*(Q${x}*$F$${R.perMain}+R${x}*$F$${R.perF2})`);
+      put('H' + x, r.units ?? '', `IF(F${x}="","",F${x}+G${x})`);
+      put('I' + x, r.elec ?? 0, `IF(H${x}="",0,ROUND(H${x}*O${x},0))`);
+      put('O' + x, +r.rate || 0); put('Q' + x, r.shareMain ? 1 : 0); put('R' + x, r.shareF2 ? 1 : 0);
+    } else put('I' + x, 0);
+    put('J' + x, r.water, `C${x}*P${x}`);
+    put('K' + x, +r.rent || 0); put('L' + x, +r.adj || 0);
+    put('M' + x, r.total, `ROUND(I${x}+J${x}+K${x}+L${x},0)`);
+    put('N' + x, r.billable ? (r.paid ? '已收 ' + (r.paidOn || '') : '未收') : '');
+    put('P' + x, +r.waterPer || 0); put('S' + x, r.adjNote || '');
+    if (r.billable) put('T' + x, r.due, r.received != null && r.received !== '' ? null : `M${x}`);
+  });
+  const tr = n + 2;
+  put('A' + tr, '合計'); put('C' + tr, rows.reduce((a, r) => a + (r.kind === 'public' ? 0 : +r.people || 0), 0), `SUM(C2:C${last})`);
+  for (const [col, k] of [['I', 'elec'], ['J', 'water'], ['K', 'rent'], ['L', 'adj'], ['M', 'total'], ['T', 'received']]) put(col + tr, c.sum[k], `SUM(${col}2:${col}${last})`);
+  const label = (r, t) => put('A' + r, t);
+  label(R.mainUse, '1F+3F 公電度數'); put('F' + R.mainUse, c.mainUse, mainRefs.length ? `SUM(${mainRefs.join(',')})` : null);
+  label(R.mainPpl, '1F+3F 分攤人數'); put('F' + R.mainPpl, c.mainPpl, `SUMPRODUCT(C2:C${last},Q2:Q${last})`);
+  label(R.perMain, '1F+3F 每人分攤度數'); put('F' + R.perMain, c.perMain ?? 0, `IF(F${R.mainPpl}=0,0,ROUND(F${R.mainUse}/F${R.mainPpl},0))`);
+  label(R.f2Use, '2F 公電度數'); put('F' + R.f2Use, c.f2Use, f2Refs.length ? `SUM(${f2Refs.join(',')})` : null);
+  label(R.f2Ppl, '2F 分攤人數'); put('F' + R.f2Ppl, c.f2Ppl, `SUMPRODUCT(C2:C${last},R2:R${last})`);
+  label(R.perF2, '2F 每人分攤度數'); put('F' + R.perF2, c.perF2 ?? 0, `IF(F${R.f2Ppl}=0,0,ROUND(F${R.f2Use}/F${R.f2Ppl},0))`);
+  label(R.paid, '已收金額'); put('F' + R.paid, c.sum.paid, `SUMIF(N2:N${last},"已收*",T2:T${last})`);
+  label(R.unpaid, '未收金額'); put('F' + R.unpaid, c.sum.unpaid, `SUMIF(N2:N${last},"未收",T2:T${last})`);
+  label(R.period, '抄表期間'); put('F' + R.period, `${m.from || '?'} → ${m.to || '?'}`);
+  const ws = sheetFromGrid(X, g);
+  ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 6 }, { wch: 10 }, { wch: 10 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 16 },
+    { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 10 }];
+  return ws;
+}
+async function exportXlsx() {
+  if (S.xlsxBusy) return;
+  if (!S.dl) { toast('這個檢視無法下載檔案'); return; }
+  S.xlsxBusy = true; render();
+  try {
+    const X = await loadXLSX();
+    const wb = X.utils.book_new(), used = new Set();
+    const nameOf = raw => {
+      let s = String(raw).replace(/[\\/?*\[\]:]/g, '_').slice(0, 31), k = 2;
+      while (used.has(s)) s = (String(raw).slice(0, 27) + '(' + k++ + ')');
+      used.add(s); return s;
+    };
+    const ms = monthList();
+    for (const m of ms) X.utils.book_append_sheet(wb, m.archived ? archiveSheet(X, m) : liveSheet(X, m), nameOf(m.sheet || m.label));
+    const sum = [['月份', '抄表起', '抄表迄', '電費', '水費', '房租', '合計', '來源']];
+    for (const m of ms.filter(m => isRegular(m.label))) {
+      const s = m.archived ? archiveSum(m) : compute(m).sum;
+      sum.push([m.label, m.from || '', m.to || '', s.elec, s.water, s.rent, s.total, m.archived ? 'Excel 匯入' : '網頁記帳']);
+    }
+    const ws1 = X.utils.aoa_to_sheet(sum); ws1['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 9 }, { wch: 10 }, { wch: 11 }, { wch: 11 }];
+    X.utils.book_append_sheet(wb, ws1, nameOf('歷年總覽'));
+    const ut = [['帳單月份', '涵蓋月份', '項目', '計費期間', '帳單金額', '向房客收', '盈虧']];
+    for (const { m, p } of utilityRecords()) for (const r of p.rows) if (r.bill != null) {
+      const i = ut.length + 1;
+      ut.push([m.label, p.months.map(x => x.label).join('、'), r.name, r.period, r.bill, r.got, { t: 'n', v: r.pl, f: `F${i}-E${i}` }]);
+    }
+    if (ut.length > 1) {
+      const n = ut.length;
+      ut.push(['合計', '', '', '', { t: 'n', v: 0, f: `SUM(E2:E${n})` }, { t: 'n', v: 0, f: `SUM(F2:F${n})` }, { t: 'n', v: 0, f: `SUM(G2:G${n})` }]);
+    }
+    const ws3 = X.utils.aoa_to_sheet(ut); ws3['!cols'] = [{ wch: 10 }, { wch: 16 }, { wch: 10 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+    X.utils.book_append_sheet(wb, ws3, nameOf('水電盈虧'));
+    const rs = [['房號', '房客', '人數', '房租', '押金', '入住日', '電話', '電費單價', '每人水費', '分攤1F+3F公電', '分攤2F公電', '備註']];
+    for (const r of roomList()) if (r.kind !== 'public') rs.push([r.id, r.tenant || '', +r.people || 0, +r.rent || 0, +r.deposit || 0, r.moveIn || '', r.phone || '', r.kind === 'flat' ? '' : +r.rate || 0, +r.waterPer || 0, r.shareMain ? '是' : '', r.shareF2 ? '是' : '', r.note || '']);
+    const ws2 = X.utils.aoa_to_sheet(rs); ws2['!cols'] = [{ wch: 7 }, { wch: 12 }, { wch: 6 }, { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 30 }];
+    X.utils.book_append_sheet(wb, ws2, nameOf('房客資料'));
+    const buf = X.write(wb, { bookType: 'xlsx', type: 'array' });
+    await S.dl.save({ filename: `房租帳本-${today()}.xlsx`, data: buf });
+  } catch (err) {
+    if (err?.code !== 'cancelled') toast(err?.code ? '下載沒有完成' : '產生 Excel 失敗，請再試一次');
+  }
+  S.xlsxBusy = false; render();
+}
+
+/* ---------- boot ---------- */
+(async () => {
+  const [db, dl, sm] = await Promise.all(['db', 'downloads', 'sample'].map(n => window.claude?.use?.(n) ?? null));
+  S.dl = dl;
+  if (sm) {
+    S.sample = sm;
+    sm.limits().then(l => {
+      S.cam = !!l?.images;
+      S.ocrFloor = l?.floor !== false;
+      if (S.cam) $('#photo-in').accept = l.images.mediaTypes.join(',');
+      render();
+    }).catch(() => {});
+  }
+  if (!db) {
+    S.dbMissing = true;
+    S.ghError = window.rentGh?.lastError || '';
+    if (!window.rentGh?.config?.().token) S.setup = true;   // first run: open the connection dialog
+    $('#sync').textContent = '未連線'; render(); return;
+  }
+  S.db = db;
+  const fail = err => { $('#sync').textContent = '連線中斷，請重新整理'; };
+  db.collection('rooms').onSnapshot(snap => {
+    S.rooms = {}; snap.docs.forEach(d => S.rooms[d.id] = { id: d.id, ...d.data() });
+    S.ready.rooms = true; $('#sync').textContent = '已同步'; if (!(S.tab === 'rooms' && S.dirty)) render();
+  }, fail);
+  db.doc('config/settings').onSnapshot(snap => {
+    S.settings = snap.exists ? snap.data() : {};
+    if (!(S.tab === 'rooms' && S.dirty)) render();
+  }, fail);
+  db.collection('months').onSnapshot(snap => {
+    S.months = {}; snap.docs.forEach(d => S.months[d.id] = d.data());
+    S.ready.months = true; $('#sync').textContent = '已同步'; if (!(S.tab === 'rooms' && S.dirty)) render();
+  }, fail);
+})();
+render();
+</script>
+
+</body></html>
